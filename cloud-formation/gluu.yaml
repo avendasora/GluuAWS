@@ -1,0 +1,821 @@
+AWSTemplateFormatVersion: 2010-09-09
+Parameters:
+  HostedZoneId:
+    Description: Hosted Zone ID (mydomain.com)
+    Type: 'AWS::Route53::HostedZone::Id'
+  Hostname:
+    Description: The hostname (host.domain.com). Must be in the Hosted Zone.
+    Default: idp-dev.mydomain.com
+    Type: String
+    MinLength: 1
+    ConstraintDescription: Must provide a Hostname.
+  VPCID:
+    Description: VPC to use
+    Type: 'AWS::EC2::VPC::Id'
+    MinLength: 1
+    ConstraintDescription: Must specify a VPC.
+  Subnet:
+    Description: Subnet to use
+    Type: 'AWS::EC2::Subnet::Id'
+    MinLength: 1
+    ConstraintDescription: Must specify a Subnet.
+  KeyName:
+    Description: Name of an existing EC2 KeyPair to enable SSH access to the instance
+    Type: 'AWS::EC2::KeyPair::KeyName'
+    MinLength: 1
+    ConstraintDescription: Must provide a KeyPair.
+  InstanceType:
+    Description: Instance type for the selected components
+    Type: String
+    Default: t2.large
+    AllowedValues:
+      - t2.medium
+      - t2.large
+      - t2.xlarge
+    ConstraintDescription: Must be a valid EC2 instance type
+  OrgName:
+    Description: Organization Name
+    Default: My Org
+    Type: String
+    MinLength: 1
+  City:
+    Description: Organization City
+    Default: Anytown
+    Type: String
+    MinLength: 1
+  RegionCode:
+    Description: Organization RegionCode
+    Default: GL
+    Type: String
+    MinLength: 1
+  CountryCode:
+    Description: Organization CountryCode
+    Default: UU
+    Type: String
+    MinLength: 1
+  GluuVersion:
+    Description: The version of Gluu to install
+    Default: 3.0.1
+    Type: String
+    AllowedValues:
+      - 2.4.4
+      - 3.0.1
+    ConstraintDescription: Must be one of the allowed versions.
+  ApplicationsMaxRam:
+    Description: The maximum amount of RAM available for use by Applications
+    Default: 8192
+    Type: Number
+  LDAPPassword:
+    Description: LDAP Password
+    Type: String
+    MinLength: 8
+  installLdap:
+    Description: Install the LDAP component?
+    Type: String
+    Default: 'True'
+    AllowedValues:
+      - 'True'
+      - 'False'
+  installHttpd:
+    Description: Install the HTTPD component?
+    Type: String
+    Default: 'True'
+    AllowedValues:
+      - 'True'
+      - 'False'
+  installOxAuth:
+    Description: Install the oxAuth component?
+    Type: String
+    Default: 'True'
+    AllowedValues:
+      - 'True'
+      - 'False'
+  installOxTrust:
+    Description: Install the oxTrust component?
+    Type: String
+    Default: 'True'
+    AllowedValues:
+      - 'True'
+      - 'False'
+  installSaml:
+    Description: Install the SAML component?
+    Type: String
+    Default: 'False'
+    AllowedValues:
+      - 'True'
+      - 'False'
+  installAsimba:
+    Description: Install the Asimba component?
+    Type: String
+    Default: 'False'
+    AllowedValues:
+      - 'True'
+      - 'False'
+  installCas:
+    Description: Install the CAS component?
+    Type: String
+    Default: 'False'
+    AllowedValues:
+      - 'True'
+      - 'False'
+  installOxAuthRP:
+    Description: Install the OxAuthRP component?
+    Type: String
+    Default: 'True'
+    AllowedValues:
+      - 'True'
+      - 'False'
+  installPassport:
+    Description: Install the Passport component?
+    Type: String
+    Default: 'False'
+    AllowedValues:
+      - 'True'
+      - 'False'
+  installJce:
+    Description: Install the JCE component?
+    Type: String
+    Default: 'False'
+    AllowedValues:
+      - 'True'
+      - 'False'
+Metadata:
+  'AWS::CloudFormation::Interface':
+    ParameterGroups:
+      - Label:
+          default: Network Configuration
+        Parameters:
+          - VPCID
+          - Subnet
+          - HostedZoneId
+      - Label:
+          default: Amazon EC2 Configuration
+        Parameters:
+          - Hostname
+          - KeyName
+          - InstanceType
+      - Label:
+          default: Gluu Configuration
+        Parameters:
+          - GluuVersion
+          - ApplicationsMaxRam
+          - installLdap
+          - LDAPPassword
+          - installAsimba
+          - installCas
+          - installSaml
+          - installHttpd
+          - installOxAuth
+          - installOxTrust
+          - installOxAuthRP
+          - installPassport
+          - installJce
+      - Label:
+          default: TLS Certificate Information
+        Parameters:
+          - OrgName
+          - City
+          - RegionCode
+          - CountryCode
+    ParameterLabels:
+      VPCID:
+        default: VPC
+      Subnet:
+        default: Subnet
+      HostedZoneId:
+        default: Hosted Zone
+      Hostname:
+        default: Hostname
+      GluuVersion:
+        default: Gluu Version
+      ApplicationsMaxRam:
+        default: Max Memory (MB)
+      InstanceType:
+        default: Instance Type
+      KeyName:
+        default: SSH Key
+      installLdap:
+        default: Install LDAP?
+      LDAPPassword:
+        default: LDAP Password
+      installAsimba:
+        default: Install Asimba?
+      installCas:
+        default: Install CAS?
+      installSaml:
+        default: Install SAML?
+      installHttpd:
+        default: Install HTTPD?
+      installOxAuth:
+        default: Install oxAuth?
+      installOxTrust:
+        default: Install oxTrust?
+      installOxAuthRP:
+        default: Install OxAuthRP?
+      installPassport:
+        default: Install Passport?
+      installJce:
+        default: Install JCE?
+      OrgName:
+        default: Organization Name
+      City:
+        default: Organization City
+      RegionCode:
+        default: Organization RegionCode
+      CountryCode:
+        default: Organization CountryCode
+  'AWS::CloudFormation::Designer':
+    dd1a6abe-e55c-46c8-8128-eb04f1285f4e:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 310
+        'y': 160
+      z: 0
+    ce2d2d1a-a71a-4324-8cac-953d61684c28:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 0
+        'y': 60
+      z: 1
+      embeds: []
+    1820ed80-49ba-454a-bf3b-c696a5c231dc:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 40
+        'y': 90
+      z: 1
+      embeds: []
+    42f0f38d-69e9-4a6d-8819-da06ac85483a:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 150
+        'y': 90
+      z: 1
+      embeds: []
+      isconnectedto:
+        - dbaf81a6-c4a8-4e65-9f31-2605f8a056b8
+        - 1bd26c06-a754-4601-a997-e5ffc04a8e11
+      ismemberof:
+        - 1820ed80-49ba-454a-bf3b-c696a5c231dc
+        - 97f90d23-ad17-4ec3-813c-00ab505c89a0
+        - 47f062c4-5adc-4320-8e55-1619650d14e9
+      isrelatedto:
+        - 375ce722-47a8-4f17-a437-64fe5a67c720
+        - d08955d5-a3d5-4b20-8f31-3e92710192d2
+        - be7261eb-3d6e-41e6-a666-fe1230543b5d
+        - 97f90d23-ad17-4ec3-813c-00ab505c89a0
+    375ce722-47a8-4f17-a437-64fe5a67c720:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 180
+        'y': 190
+      z: 0
+      embeds: []
+      isassociatedwith:
+        - c9f72bef-8a3e-4491-be4b-9807db5b875e
+    909c08c9-665a-4085-b418-9b2d74fc9f1f:
+      source:
+        id: 42f0f38d-69e9-4a6d-8819-da06ac85483a
+      target:
+        id: 1820ed80-49ba-454a-bf3b-c696a5c231dc
+      z: 2
+    2fe1010c-5a24-4e63-807b-562f7408f7c8:
+      source:
+        id: 501945dc-81da-49e6-9f39-d259b045de00
+      target:
+        id: 42f0f38d-69e9-4a6d-8819-da06ac85483a
+      z: 2
+    d3960fb5-e0a4-4af3-bf0f-76588b6f2de5:
+      source:
+        id: be7261eb-3d6e-41e6-a666-fe1230543b5d
+      target:
+        id: 1820ed80-49ba-454a-bf3b-c696a5c231dc
+      z: 2
+    d9b38d01-3627-41d1-9fbd-47c04add9476:
+      source:
+        id: a34082cd-3997-418c-acad-5b09b90298e0
+      target:
+        id: 42f0f38d-69e9-4a6d-8819-da06ac85483a
+      z: 2
+    0d27108f-cbcd-4d83-b665-3fc9caa1094a:
+      source:
+        id: dbaf81a6-c4a8-4e65-9f31-2605f8a056b8
+      target:
+        id: 1820ed80-49ba-454a-bf3b-c696a5c231dc
+      z: 2
+    6556ad1d-98d5-4cdc-ab80-3543d4d1b0cc:
+      source:
+        id: 42f0f38d-69e9-4a6d-8819-da06ac85483a
+      target:
+        id: dbaf81a6-c4a8-4e65-9f31-2605f8a056b8
+      z: 3
+    88eced30-bd4b-43c4-a549-96b1ddf6d1a5:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 150
+        'y': 290
+      z: 1
+      embeds: []
+    47f062c4-5adc-4320-8e55-1619650d14e9:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 190
+        'y': 190
+      z: 1
+      embeds: []
+    1bd26c06-a754-4601-a997-e5ffc04a8e11:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 150
+        'y': 190
+      z: 1
+      embeds: []
+      ismemberof:
+        - 47f062c4-5adc-4320-8e55-1619650d14e9
+        - 97f90d23-ad17-4ec3-813c-00ab505c89a0
+    d8873477-8bdc-4489-8c9b-e6e7b0ca886c:
+      source:
+        id: 88eced30-bd4b-43c4-a549-96b1ddf6d1a5
+      target:
+        id: 1bd26c06-a754-4601-a997-e5ffc04a8e11
+      z: 1
+    97f90d23-ad17-4ec3-813c-00ab505c89a0:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 250
+        'y': 90
+      z: 1
+      embeds: []
+    0e207610-a058-49ac-b56d-657bea2f1baf:
+      source:
+        id: 42f0f38d-69e9-4a6d-8819-da06ac85483a
+        selector: 'g:nth-child(1) g:nth-child(4) g:nth-child(3) circle:nth-child(1)     '
+        port: 'AWS::MembershipLInk-AWS::EC2::SecurityGroup-SecurityGroupIds'
+      target:
+        id: 97f90d23-ad17-4ec3-813c-00ab505c89a0
+      z: 3
+    004050d8-5b52-47ee-94e2-b2962b1c221a:
+      source:
+        id: 42f0f38d-69e9-4a6d-8819-da06ac85483a
+        selector: 'g:nth-child(1) g:nth-child(4) g:nth-child(3) circle:nth-child(1)     '
+        port: 'AWS::MembershipLInk-AWS::EC2::SecurityGroup-SecurityGroupIds'
+      target:
+        id: 47f062c4-5adc-4320-8e55-1619650d14e9
+      z: 3
+    a92e8949-2719-4979-a5e9-bd9153b5a696:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 50
+        'y': 90
+      z: 0
+      embeds: []
+      dependson:
+        - 1bd26c06-a754-4601-a997-e5ffc04a8e11
+      isrelatedto:
+        - 88eced30-bd4b-43c4-a549-96b1ddf6d1a5
+        - 42f0f38d-69e9-4a6d-8819-da06ac85483a
+    95c8545a-4d39-4a8d-9cfe-88be2d099aef:
+      source:
+        id: 1bd26c06-a754-4601-a997-e5ffc04a8e11
+      target:
+        id: 97f90d23-ad17-4ec3-813c-00ab505c89a0
+      z: 2
+    73eea56a-d44e-4cc8-b838-455da82c2448:
+      source:
+        id: a92e8949-2719-4979-a5e9-bd9153b5a696
+      target:
+        id: 1bd26c06-a754-4601-a997-e5ffc04a8e11
+      z: 2
+    7bb79094-8111-48ea-95a1-e92b1fa947ab:
+      source:
+        id: 1bd26c06-a754-4601-a997-e5ffc04a8e11
+        selector: 'g:nth-child(1) g:nth-child(4) g:nth-child(2) circle:nth-child(1)     '
+        port: 'AWS::MembershipLInk-AWS::EC2::SecurityGroup-GroupSet'
+      target:
+        id: 97f90d23-ad17-4ec3-813c-00ab505c89a0
+      z: 4
+    c8c68aac-f88e-4949-99a1-773a9d666554:
+      source:
+        id: 42f0f38d-69e9-4a6d-8819-da06ac85483a
+      target:
+        id: 97f90d23-ad17-4ec3-813c-00ab505c89a0
+      z: 2
+    c3a2fdf8-67ba-429c-92bd-06d1c56d7b48:
+      source:
+        id: 42f0f38d-69e9-4a6d-8819-da06ac85483a
+      target:
+        id: 47f062c4-5adc-4320-8e55-1619650d14e9
+      z: 3
+Mappings:
+  Region2Principal:
+    us-east-1:
+      EC2Principal: ec2.amazonaws.com
+      OpsWorksPrincipal: opsworks.amazonaws.com
+    us-west-2:
+      EC2Principal: ec2.amazonaws.com
+      OpsWorksPrincipal: opsworks.amazonaws.com
+    us-west-1:
+      EC2Principal: ec2.amazonaws.com
+      OpsWorksPrincipal: opsworks.amazonaws.com
+    eu-west-1:
+      EC2Principal: ec2.amazonaws.com
+      OpsWorksPrincipal: opsworks.amazonaws.com
+    eu-west-2:
+      EC2Principal: ec2.amazonaws.com
+      OpsWorksPrincipal: opsworks.amazonaws.com
+    ap-southeast-1:
+      EC2Principal: ec2.amazonaws.com
+      OpsWorksPrincipal: opsworks.amazonaws.com
+    ap-northeast-1:
+      EC2Principal: ec2.amazonaws.com
+      OpsWorksPrincipal: opsworks.amazonaws.com
+    ap-northeast-2:
+      EC2Principal: ec2.amazonaws.com
+      OpsWorksPrincipal: opsworks.amazonaws.com
+    ap-southeast-2:
+      EC2Principal: ec2.amazonaws.com
+      OpsWorksPrincipal: opsworks.amazonaws.com
+    ap-south-1:
+      EC2Principal: ec2.amazonaws.com
+      OpsWorksPrincipal: opsworks.amazonaws.com
+    us-east-2:
+      EC2Principal: ec2.amazonaws.com
+      OpsWorksPrincipal: opsworks.amazonaws.com
+    ca-central-1:
+      EC2Principal: ec2.amazonaws.com
+      OpsWorksPrincipal: opsworks.amazonaws.com
+    sa-east-1:
+      EC2Principal: ec2.amazonaws.com
+      OpsWorksPrincipal: opsworks.amazonaws.com
+    cn-north-1:
+      EC2Principal: ec2.amazonaws.com.cn
+      OpsWorksPrincipal: opsworks.amazonaws.com.cn
+    eu-central-1:
+      EC2Principal: ec2.amazonaws.com
+      OpsWorksPrincipal: opsworks.amazonaws.com
+  Region2ARNPrefix:
+    us-east-1:
+      ARNPrefix: 'arn:aws:'
+    us-west-1:
+      ARNPrefix: 'arn:aws:'
+    us-west-2:
+      ARNPrefix: 'arn:aws:'
+    eu-west-1:
+      ARNPrefix: 'arn:aws:'
+    eu-west-2:
+      ARNPrefix: 'arn:aws:'
+    ap-northeast-1:
+      ARNPrefix: 'arn:aws:'
+    ap-northeast-2:
+      ARNPrefix: 'arn:aws:'
+    ap-southeast-1:
+      ARNPrefix: 'arn:aws:'
+    ap-southeast-2:
+      ARNPrefix: 'arn:aws:'
+    ap-south-1:
+      ARNPrefix: 'arn:aws:'
+    us-east-2:
+      ARNPrefix: 'arn:aws:'
+    ca-central-1:
+      ARNPrefix: 'arn:aws:'
+    sa-east-1:
+      ARNPrefix: 'arn:aws:'
+    cn-north-1:
+      ARNPrefix: 'arn:aws-cn:'
+    eu-central-1:
+      ARNPrefix: 'arn:aws:'
+  GluuVersionMap:
+    2.4.4:
+      ServiceName: gluu-server-2.4.4
+    3.0.1:
+      ServiceName: gluu-server-3.0.1
+Outputs:
+  ToCompleteSetup:
+    Description: >-
+      Connect to the new instance and finish the setup process. 
+      Ideally setup would be finished, but the final commands 
+      don't execute for some reason.
+    Value: !Join 
+      - ''
+      - - <pre>
+        - |+
+
+        - ssh ubuntu@
+        - !GetAtt 
+          - AuthServer
+          - PublicIp
+        - |+
+
+        - sudo su -
+        - |+
+
+        - 'service '
+        - !FindInMap 
+          - GluuVersionMap
+          - !Ref GluuVersion
+          - ServiceName
+        - ' login'
+        - |+
+
+        - cd /install/community-edition-setup
+        - |+
+
+        - ./setup.py -n -f setup.properties
+        - |+
+
+        - </pre>
+  UpdateHostsFile:
+    Description: Only needed if AWS isn't authoritative for HostZone
+    Value: !Join 
+      - ''
+      - - 'sudo echo "'
+        - !GetAtt 
+          - AuthServer
+          - PublicIp
+        - ' '
+        - !Ref Hostname
+        - '" >> /etc/hosts'
+  AuthServerURL:
+    Description: URL for newly created Gluu server
+    Value: !Join 
+      - ''
+      - - 'https://'
+        - !Ref Hostname
+Resources:
+  AuthSG:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      VpcId: !Ref VPCID
+      GroupDescription: Enable SSH access via port 22 and HTTPS access via 443
+      SecurityGroupIngress:
+        - CidrIp: 0.0.0.0/0
+          FromPort: 22
+          IpProtocol: tcp
+          ToPort: 22
+        - CidrIp: 0.0.0.0/0
+          FromPort: 443
+          IpProtocol: tcp
+          ToPort: 443
+      Tags:
+        - Key: Name
+          Value: !Join 
+            - ''
+            - - !Ref 'AWS::StackName'
+              - SG
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 97f90d23-ad17-4ec3-813c-00ab505c89a0
+  AuthServer:
+    Type: 'AWS::EC2::Instance'
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Ref 'AWS::StackName'
+      ImageId: ami-e13739f6
+      InstanceType: !Ref InstanceType
+      NetworkInterfaces:
+        - DeviceIndex: 0
+          AssociatePublicIpAddress: true
+          SubnetId: !Ref Subnet
+          GroupSet:
+            - !Ref AuthSG
+      KeyName: !Ref KeyName
+      UserData: !Base64 
+        'Fn::Join':
+          - ''
+          - - |
+              #!/bin/bash -xe
+            - |
+              # Install cfn-* tools
+            - |
+              apt-get -y install python-setuptools
+            - >
+              easy_install
+              https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz
+            - |
+              apt-get update
+            - |
+              # Install using Metadata
+            - 'cfn-init -v '
+            - '         --stack '
+            - !Ref 'AWS::StackName'
+            - '         --resource AuthServer '
+            - '         --configsets Install '
+            - '         --region '
+            - !Ref 'AWS::Region'
+            - ''
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 42f0f38d-69e9-4a6d-8819-da06ac85483a
+      Comment1: Configure the bootstrap helpers to install Gluu
+      'AWS::CloudFormation::Init':
+        configSets:
+          Install:
+            - Create_Properties_File
+            - Install_And_Configure_Gluu
+        Create_Properties_File:
+          commands:
+            Command_100:
+              command: !Join 
+                - ''
+                - - sudo mkdir -p /opt/
+                  - !FindInMap 
+                    - GluuVersionMap
+                    - !Ref GluuVersion
+                    - ServiceName
+                  - /install/community-edition-setup
+            Command_200:
+              command: !Join 
+                - ''
+                - - sudo echo -ne "
+                  - '### IDP Host Information'
+                  - |+
+
+                  - >-
+                    ip=`sudo curl
+                    "http://169.254.169.254/latest/meta-data/local-ipv4"`
+                  - |+
+
+                  - |+
+
+                  - '### The hostname of the server'
+                  - |+
+
+                  - hostname=
+                  - !Ref Hostname
+                  - |+
+
+                  - applicationsMaxRam=
+                  - !Ref ApplicationsMaxRam
+                  - |+
+
+                  - |+
+
+                  - '### Self-signed Certificate Information'
+                  - |+
+
+                  - orgName=
+                  - !Ref OrgName
+                  - |+
+
+                  - countryCode=
+                  - !Ref CountryCode
+                  - |+
+
+                  - city=
+                  - !Ref City
+                  - |+
+
+                  - state=
+                  - !Ref RegionCode
+                  - |+
+
+                  - |+
+
+                  - '### Gluu Installation'
+                  - |+
+
+                  - installLdap=
+                  - !Ref installLdap
+                  - |+
+
+                  - installHttpd=
+                  - !Ref installHttpd
+                  - |+
+
+                  - installOxAuth=
+                  - !Ref installOxAuth
+                  - |+
+
+                  - installOxTrust=
+                  - !Ref installOxTrust
+                  - |+
+
+                  - installSaml=
+                  - !Ref installSaml
+                  - |+
+
+                  - installAsimba=
+                  - !Ref installAsimba
+                  - |+
+
+                  - installCas=
+                  - !Ref installCas
+                  - |+
+
+                  - installOxAuthRP=
+                  - !Ref installOxAuthRP
+                  - |+
+
+                  - installPassport=
+                  - !Ref installPassport
+                  - |+
+
+                  - installJce=
+                  - !Ref installJce
+                  - |+
+
+                  - |+
+
+                  - '### Security Config'
+                  - |+
+
+                  - ldapPass=
+                  - !Ref LDAPPassword
+                  - '"'
+                  - ' '
+                  - '>> /opt/'
+                  - !FindInMap 
+                    - GluuVersionMap
+                    - !Ref GluuVersion
+                    - ServiceName
+                  - /install/community-edition-setup/setup.properties
+        Install_And_Configure_Gluu:
+          commands:
+            Command_000:
+              command: sudo su -
+            Command_100:
+              command: !Join 
+                - ''
+                - - 'echo "127.0.0.1 ''
+                  - !Ref Hostname
+                  - '" >> /etc/hosts'
+            Command_200:
+              command: >-
+                echo "deb https://repo.gluu.org/ubuntu/ xenial main" >
+                /etc/apt/sources.list.d/gluu-repo.list
+            Command_300:
+              command: 'curl https://repo.gluu.org/ubuntu/gluu-apt.key | apt-key add -'
+            Command_400:
+              command: apt-get update
+            Command_500:
+              command: !Join 
+                - ''
+                - - 'apt-get install '
+                  - !FindInMap 
+                    - GluuVersionMap
+                    - !Ref GluuVersion
+                    - ServiceName
+            Command_600:
+              command: !Join 
+                - ''
+                - - 'service '
+                  - !FindInMap 
+                    - GluuVersionMap
+                    - !Ref GluuVersion
+                    - ServiceName
+                  - ' start'
+            Command_700:
+              command: !Join 
+                - ''
+                - - 'service '
+                  - !FindInMap 
+                    - GluuVersionMap
+                    - !Ref GluuVersion
+                    - ServiceName
+                  - ' login'
+            Command_800:
+              command: !Join 
+                - ''
+                - - cd /opt/
+                  - !FindInMap 
+                    - GluuVersionMap
+                    - !Ref GluuVersion
+                    - ServiceName
+                  - /install/community-edition-setup
+            Command_900:
+              command: ./setup.py -n -f setup.properties
+  HostnameDNS:
+    Type: 'AWS::Route53::RecordSet'
+    Properties:
+      HostedZoneId: !Ref HostedZoneId
+      Name: !Ref Hostname
+      ResourceRecords:
+        - !GetAtt 
+          - AuthServer
+          - PublicIp
+      Type: A
+      TTL: 900
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: a92e8949-2719-4979-a5e9-bd9153b5a696
