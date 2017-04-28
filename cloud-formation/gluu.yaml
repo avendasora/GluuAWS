@@ -512,9 +512,8 @@ Mappings:
 Outputs:
   ToCompleteSetup:
     Description: >-
-      Connect to the new instance and finish the setup process. 
-      Ideally setup would be finished, but the final commands 
-      don't execute for some reason.
+      Connect to the new instance and finish the setup process.  Ideally setup
+      would be finished, but the final commands  don't execute for some reason.
     Value: !Join 
       - ''
       - - <pre>
@@ -548,7 +547,7 @@ Outputs:
     Description: Only needed if AWS isn't authoritative for HostZone
     Value: !Join 
       - ''
-      - - 'sudo echo "'
+      - - sudo echo "
         - !GetAtt 
           - AuthServer
           - PublicIp
@@ -757,7 +756,7 @@ Resources:
             Command_100:
               command: !Join 
                 - ''
-                - - 'echo "127.0.0.1 ''
+                - - 'echo "127.0.0.1 '
                   - !Ref Hostname
                   - '" >> /etc/hosts'
             Command_200:
